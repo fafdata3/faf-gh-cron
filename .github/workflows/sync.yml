@@ -35,10 +35,10 @@ jobs:
 
       - name: Dependencias
         run: |
-          cd runner
+cd runner
           pip install --quiet -r requirements.txt
 
-- name: Chrome + chromedriver (Chrome for Testing, mismo build)
+      - name: Chrome + chromedriver (Chrome for Testing, mismo build)
         run: |
           set -e
           curl -fsSL "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" -o /tmp/g.json

@@ -1,4 +1,4 @@
-name: faf-sync
+﻿name: faf-sync
 
 on:
   schedule:
@@ -83,7 +83,7 @@ jobs:
           FAF_FAFSTATS_DIR: ${{ github.workspace }}/runner/blobs
           FAF_MONOLITO: ${{ github.workspace }}/runner/blobs/FUT_stats_fixed.py
           CHROME_BIN: /usr/bin/google-chrome
-          CHROMEDRIVER: ${{ runner.home }}/bin/chromedriver
+          CHROMEDRIVER: /home/runner/bin/chromedriver
           FAF_M7: '1'
         run: |
           cd runner

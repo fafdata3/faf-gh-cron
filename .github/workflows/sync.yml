@@ -53,6 +53,7 @@ jobs:
           FAF_FAFSTATS_DIR: ${{ github.workspace }}/runner/blobs
           FAF_MONOLITO: ${{ github.workspace }}/runner/blobs/FUT_stats_fixed.py
           CHROME_BIN: /usr/bin/google-chrome
+          FAF_M7: '1'
         run: |
           cd runner
           if [ "${{ github.event.inputs.rebuild_only }}" = "true" ]; then

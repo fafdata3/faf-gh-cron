@@ -35,7 +35,7 @@ jobs:
 
       - name: Dependencias
         run: |
-cd runner
+          cd runner
           pip install --quiet -r requirements.txt
 
       - name: Chrome + chromedriver (Chrome for Testing, mismo build)

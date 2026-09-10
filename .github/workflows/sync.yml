@@ -38,30 +38,6 @@ jobs:
           cd runner
           pip install --quiet -r requirements.txt
 
-      - name: Chrome + chromedriver (Chrome for Testing, mismo build)
-        run: |
-          set -e
-          curl -fsSL "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" -o /tmp/g.json
-          python3 - <<'PY'
-          import json, urllib.request, zipfile
-          d = json.load(open('/tmp/g.json'))
-          v = d['channels']['Stable']['version']
-          print('Chrome for Testing:', v)
-          base = f'https://storage.googleapis.com/chrome-for-testing-public/{v}/linux64/'
-          for name, out in (('chrome-linux64.zip', '/tmp/chrome.zip'),
-                            ('chromedriver-linux64.zip', '/tmp/cd.zip')):
-              print('descargando', name)
-              urllib.request.urlretrieve(base + name, out)
-          zipfile.ZipFile('/tmp/chrome.zip').extractall('/tmp/cft')
-          zipfile.ZipFile('/tmp/cd.zip').extractall('/tmp/cft')
-          PY
-          mkdir -p "$HOME/chrome"
-          cp -r /tmp/cft/chrome-linux64 "$HOME/chrome/"
-          cp /tmp/cft/chromedriver-linux64/chromedriver "$HOME/chrome/"
-          chmod +x "$HOME/chrome/chrome-linux64/chrome" "$HOME/chrome/chromedriver"
-          "$HOME/chrome/chrome-linux64/chrome" --version
-          "$HOME/chrome/chromedriver" --version
-
       - name: Sync y deploy
         env:
           S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
@@ -76,8 +52,6 @@ jobs:
           FAF_BUILD_DIR: ${{ github.workspace }}/build
           FAF_FAFSTATS_DIR: ${{ github.workspace }}/runner/blobs
           FAF_MONOLITO: ${{ github.workspace }}/runner/blobs/FUT_stats_fixed.py
-          CHROME_BIN: /home/runner/chrome/chrome-linux64/chrome
-          CHROMEDRIVER: /home/runner/chrome/chromedriver
           FAF_M7: '1'
         run: |
           cd runner

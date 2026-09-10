@@ -1,0 +1,61 @@
+name: faf-sync
+
+on:
+  schedule:
+    # Cada 2 h (UTC), a :23 y :46 para no chocar con los arranques masivos de GH
+    - cron: '23 */2 * * *'
+    - cron: '46 */2 * * *'
+  workflow_dispatch:
+    inputs:
+      rebuild_only:
+        description: 'Solo regenerar/desplegar (sin descargar)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: faf-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: none
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Clonar runner privado (faf-runner)
+        run: |
+          git clone --depth=1 \
+            "https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository_owner }}/faf-runner.git" \
+            runner
+
+      - name: Dependencias
+        run: |
+          cd runner
+          pip install --quiet -r requirements.txt
+
+      - name: Sync y deploy
+        env:
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+          S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PROJECT_NAME: faf-stats
+          FAF_DATA_DIR: ${{ github.workspace }}/data
+          FAF_BUILD_DIR: ${{ github.workspace }}/build
+          FAF_FAFSTATS_DIR: ${{ github.workspace }}/runner/blobs
+          FAF_MONOLITO: ${{ github.workspace }}/runner/blobs/FUT_stats_fixed.py
+          CHROME_BIN: /usr/bin/google-chrome
+        run: |
+          cd runner
+          if [ "${{ github.event.inputs.rebuild_only }}" = "true" ]; then
+            python sync_all.py --rebuild-only
+          else
+            python sync_all.py --once --bootstrap
+          fi

@@ -53,6 +53,10 @@ jobs:
           FAF_FAFSTATS_DIR: ${{ github.workspace }}/runner/blobs
           FAF_MONOLITO: ${{ github.workspace }}/runner/blobs/FUT_stats_fixed.py
           FAF_M7: '1'
+          FAF_PACING: '2'
+          FAF_MAX_PER_RUN: '20'
+          FAF_NEW_WINDOW: '30'
+          FAF_M7_MAX_PER_RUN: '24'
         run: |
           cd runner
           if [ "${{ github.event.inputs.rebuild_only }}" = "true" ]; then

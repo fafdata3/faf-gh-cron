@@ -63,6 +63,9 @@ jobs:
           PY
           sudo cp /tmp/cd/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver
           sudo chmod +x /usr/local/bin/chromedriver
+          mkdir -p "$HOME/bin"
+          cp /usr/local/bin/chromedriver "$HOME/bin/chromedriver"
+          chmod +x "$HOME/bin/chromedriver"
           chromedriver --version
 
       - name: Sync y deploy
@@ -80,7 +83,7 @@ jobs:
           FAF_FAFSTATS_DIR: ${{ github.workspace }}/runner/blobs
           FAF_MONOLITO: ${{ github.workspace }}/runner/blobs/FUT_stats_fixed.py
           CHROME_BIN: /usr/bin/google-chrome
-          CHROMEDRIVER: /usr/local/bin/chromedriver
+          CHROMEDRIVER: ${{ runner.home }}/bin/chromedriver
           FAF_M7: '1'
         run: |
           cd runner

@@ -44,7 +44,7 @@ jobs:
           VER=$(/usr/bin/google-chrome --version | grep -oP '\d+\.\d+\.\d+\.\d+')
           MAJ="${VER%%.*}"
           echo "Chrome detectado: $VER (major $MAJ)"
-          curl -fsSL "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json" -o /tmp/g.json
+          curl -fsSL "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" -o /tmp/g.json
           python3 - <<'PY'
           import json, urllib.request, zipfile, sys
           d = json.load(open('/tmp/g.json'))

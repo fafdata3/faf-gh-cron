@@ -38,35 +38,29 @@ jobs:
           cd runner
           pip install --quiet -r requirements.txt
 
-      - name: Chromedriver estable (mismo major que el Chrome instalado)
+- name: Chrome + chromedriver (Chrome for Testing, mismo build)
         run: |
           set -e
-          VER=$(/usr/bin/google-chrome --version | grep -oP '\d+\.\d+\.\d+\.\d+')
-          MAJ="${VER%%.*}"
-          echo "Chrome detectado: $VER (major $MAJ)"
           curl -fsSL "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" -o /tmp/g.json
           python3 - <<'PY'
-          import json, urllib.request, zipfile, sys
+          import json, urllib.request, zipfile
           d = json.load(open('/tmp/g.json'))
-          maj = "${MAJ}"
-          version = None
-          for x in d.get('versions', []):
-              if x['version'].startswith(maj + '.'):
-                  version = x['version']
-                  break
-          if not version:
-              version = d['channels']['Stable']['version']
-          print('Chromedriver:', version)
-          url = f'https://storage.googleapis.com/chrome-for-testing-public/{version}/linux64/chromedriver-linux64.zip'
-          urllib.request.urlretrieve(url, '/tmp/cd.zip')
-          zipfile.ZipFile('/tmp/cd.zip').extractall('/tmp/cd')
+          v = d['channels']['Stable']['version']
+          print('Chrome for Testing:', v)
+          base = f'https://storage.googleapis.com/chrome-for-testing-public/{v}/linux64/'
+          for name, out in (('chrome-linux64.zip', '/tmp/chrome.zip'),
+                            ('chromedriver-linux64.zip', '/tmp/cd.zip')):
+              print('descargando', name)
+              urllib.request.urlretrieve(base + name, out)
+          zipfile.ZipFile('/tmp/chrome.zip').extractall('/tmp/cft')
+          zipfile.ZipFile('/tmp/cd.zip').extractall('/tmp/cft')
           PY
-          sudo cp /tmp/cd/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver
-          sudo chmod +x /usr/local/bin/chromedriver
-          mkdir -p "$HOME/bin"
-          cp /usr/local/bin/chromedriver "$HOME/bin/chromedriver"
-          chmod +x "$HOME/bin/chromedriver"
-          chromedriver --version
+          mkdir -p "$HOME/chrome"
+          cp -r /tmp/cft/chrome-linux64 "$HOME/chrome/"
+          cp /tmp/cft/chromedriver-linux64/chromedriver "$HOME/chrome/"
+          chmod +x "$HOME/chrome/chrome-linux64/chrome" "$HOME/chrome/chromedriver"
+          "$HOME/chrome/chrome-linux64/chrome" --version
+          "$HOME/chrome/chromedriver" --version
 
       - name: Sync y deploy
         env:
@@ -82,8 +76,8 @@ jobs:
           FAF_BUILD_DIR: ${{ github.workspace }}/build
           FAF_FAFSTATS_DIR: ${{ github.workspace }}/runner/blobs
           FAF_MONOLITO: ${{ github.workspace }}/runner/blobs/FUT_stats_fixed.py
-          CHROME_BIN: /usr/bin/google-chrome
-          CHROMEDRIVER: /home/runner/bin/chromedriver
+          CHROME_BIN: /home/runner/chrome/chrome-linux64/chrome
+          CHROMEDRIVER: /home/runner/chrome/chromedriver
           FAF_M7: '1'
         run: |
           cd runner

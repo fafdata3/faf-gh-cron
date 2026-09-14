@@ -11,6 +11,14 @@ on:
         description: 'Solo regenerar/desplegar (sin descargar)'
         type: boolean
         default: false
+      sources:
+        description: 'Fuentes (csv, ej: euskadi,bizkaia). Vacío = todas'
+        type: string
+        default: ''
+      max_per_run:
+        description: 'Actas máx. por fuente en esta pasada'
+        type: string
+        default: '40'
 
 concurrency:
   group: faf-sync
@@ -54,7 +62,7 @@ jobs:
           FAF_MONOLITO: ${{ github.workspace }}/runner/blobs/FUT_stats_fixed.py
           FAF_M7: '1'
           FAF_PACING: '2'
-          FAF_MAX_PER_RUN: '20'
+          FAF_MAX_PER_RUN: ${{ inputs.max_per_run }}
           FAF_NEW_WINDOW: '30'
           FAF_M7_MAX_PER_RUN: '24'
         run: |
@@ -62,5 +70,9 @@ jobs:
           if [ "${{ github.event.inputs.rebuild_only }}" = "true" ]; then
             python sync_all.py --rebuild-only
           else
-            python sync_all.py --once --bootstrap
+            ARGS=""
+            if [ "${{ github.event.inputs.sources }}" != "" ]; then
+              ARGS="--sources ${{ github.event.inputs.sources }}"
+            fi
+            python sync_all.py --once --bootstrap $ARGS
           fi

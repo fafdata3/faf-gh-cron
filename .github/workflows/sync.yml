@@ -65,6 +65,7 @@ jobs:
           FAF_MAX_PER_RUN: ${{ inputs.max_per_run }}
           FAF_NEW_WINDOW: '30'
           FAF_M7_MAX_PER_RUN: '24'
+          FAF_SYNC_GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           cd runner
           if [ "${{ github.event.inputs.rebuild_only }}" = "true" ]; then

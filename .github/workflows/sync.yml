@@ -50,20 +50,30 @@ jobs:
         uses: browser-actions/setup-chrome@v1
         with:
           chrome-version: stable
-      - name: Exponer rutas de Chrome
+      - name: Exponer ruta de Chrome
         run: |
           CHROME_BIN=$(find /opt/hostedtoolcache/setup-chrome -name 'chrome' -type f 2>/dev/null | head -1)
-          DRV=$(find /opt/hostedtoolcache/setup-chrome -name 'chromedriver' -type f 2>/dev/null | head -1)
           if [ -z "$CHROME_BIN" ]; then CHROME_BIN=$(command -v google-chrome || true); fi
-          if [ -z "$DRV" ]; then DRV=$(command -v chromedriver || true); fi
-          if [ -n "$DRV" ]; then chmod 755 "$DRV" || true; fi
           if [ -n "$CHROME_BIN" ]; then
             echo "CHROME_BIN=$CHROME_BIN" | tee -a $GITHUB_ENV
           fi
-          if [ -n "$DRV" ]; then
-            echo "CHROMEDRIVER=$DRV" | tee -a $GITHUB_ENV
-          fi
-          echo "Chrome: $CHROME_BIN | Chromedriver: $DRV"
+          CHROME_VER=$("$CHROME_BIN" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "Chrome: $CHROME_BIN ($CHROME_VER)"
+
+      - name: Descargar chromedriver del mismo build (Selenium Modo 7)
+        run: |
+          CHROME_BIN="$CHROME_BIN"
+          CHROME_VER=$("$CHROME_BIN" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "chrome-version=$CHROME_VER"
+          if [ -z "$CHROME_VER" ]; then exit 1; fi
+          mkdir -p "$RUNNER_TEMP/driver"
+          curl -fsSL "https://storage.googleapis.com/chrome-for-testing-public/$CHROME_VER/linux64/chromedriver-linux64.zip" \
+            -o "$RUNNER_TEMP/driver/cd.zip"
+          cd "$RUNNER_TEMP/driver" && unzip -q -o cd.zip
+          DRV=$(find "$RUNNER_TEMP/driver" -name chromedriver -type f | head -1)
+          chmod 755 "$DRV"
+          echo "CHROMEDRIVER=$DRV" | tee -a $GITHUB_ENV
+          "$DRV" --version
 
       - name: Sync y deploy
         env:

@@ -18,7 +18,7 @@ on:
       max_per_run:
         description: 'Actas máx. por fuente en esta pasada'
         type: string
-        default: '40'
+        default: '60'
 
 concurrency:
   group: faf-sync
@@ -46,6 +46,22 @@ jobs:
           cd runner
           pip install --quiet -r requirements.txt
 
+      - name: Instalar Chrome + chromedriver (Selenium Modo 7)
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+      - name: Exponer rutas de Chrome
+        run: |
+          CHROME=$(command -v google-chrome || command -v google-chrome-stable || true)
+          DRV=$(command -v chromedriver || true)
+          if [ -n "$CHROME" ]; then
+            echo "CHROME_BIN=$CHROME" | tee -a $GITHUB_ENV
+          fi
+          if [ -n "$DRV" ]; then
+            echo "CHROMEDRIVER=$DRV" | tee -a $GITHUB_ENV
+          fi
+          echo "Chrome: $CHROME | Chromedriver: $DRV"
+
       - name: Sync y deploy
         env:
           S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
@@ -61,10 +77,16 @@ jobs:
           FAF_FAFSTATS_DIR: ${{ github.workspace }}/runner/blobs
           FAF_MONOLITO: ${{ github.workspace }}/runner/blobs/FUT_stats_fixed.py
           FAF_M7: '1'
-          FAF_PACING: '2'
+          # Con Selenium el ritmo ya es humano (0.3–1.3 s/acta en dl.descargar);
+          # FAF_PACING solo se aplica al fallback HTTP. 8s evita auto-bloqueo
+          # del fallback (2s quemaba el presupuesto con 200 vacíos).
+          FAF_PACING: '8'
           FAF_MAX_PER_RUN: ${{ inputs.max_per_run }}
           FAF_NEW_WINDOW: '30'
           FAF_M7_MAX_PER_RUN: '24'
+          # Con Chrome los bloqueos son raros; pausa fuerte más corta que la del
+          # escritorio (15 min) por el presupuesto de la pasada (FAF_RUN_BUDGET).
+          FAF_M7_PAUSA_LARGA: '300'
           FAF_SYNC_GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           cd runner

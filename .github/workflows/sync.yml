@@ -52,15 +52,18 @@ jobs:
           chrome-version: stable
       - name: Exponer rutas de Chrome
         run: |
-          CHROME=$(command -v google-chrome || command -v google-chrome-stable || true)
-          DRV=$(command -v chromedriver || true)
-          if [ -n "$CHROME" ]; then
-            echo "CHROME_BIN=$CHROME" | tee -a $GITHUB_ENV
+          CHROME_BIN=$(find /opt/hostedtoolcache/setup-chrome -name 'chrome' -type f 2>/dev/null | head -1)
+          DRV=$(find /opt/hostedtoolcache/setup-chrome -name 'chromedriver' -type f 2>/dev/null | head -1)
+          if [ -z "$CHROME_BIN" ]; then CHROME_BIN=$(command -v google-chrome || true); fi
+          if [ -z "$DRV" ]; then DRV=$(command -v chromedriver || true); fi
+          if [ -n "$DRV" ]; then chmod 755 "$DRV" || true; fi
+          if [ -n "$CHROME_BIN" ]; then
+            echo "CHROME_BIN=$CHROME_BIN" | tee -a $GITHUB_ENV
           fi
           if [ -n "$DRV" ]; then
             echo "CHROMEDRIVER=$DRV" | tee -a $GITHUB_ENV
           fi
-          echo "Chrome: $CHROME | Chromedriver: $DRV"
+          echo "Chrome: $CHROME_BIN | Chromedriver: $DRV"
 
       - name: Sync y deploy
         env:
@@ -87,6 +90,9 @@ jobs:
           # Con Chrome los bloqueos son raros; pausa fuerte más corta que la del
           # escritorio (15 min) por el presupuesto de la pasada (FAF_RUN_BUDGET).
           FAF_M7_PAUSA_LARGA: '300'
+          # Presupuesto por pasada: con Selenium la descarga es ~1-2 s/acta y hay
+          # 8 fuentes; 480s (default) se quedaba corto. 25 min cubre todas.
+          FAF_RUN_BUDGET_SEC: '1500'
           FAF_SYNC_GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           cd runner

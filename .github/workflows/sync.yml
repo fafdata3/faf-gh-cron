@@ -2,9 +2,11 @@
 
 on:
   schedule:
-    # Cada 2 h (UTC), a :23 y :46 para no chocar con los arranques masivos de GH
-    - cron: '23 */2 * * *'
-    - cron: '46 */2 * * *'
+    # TEMPORALMENTE desactivado (cron lejano) para poder desplegar el
+    # descargador corregido sin colisiones de concurrencia. Fecha a restaurar:
+    #    - cron: '23 */2 * * *'
+    #    - cron: '46 */2 * * *'
+    - cron: '0 0 1 1 *'
   workflow_dispatch:
     inputs:
       rebuild_only:

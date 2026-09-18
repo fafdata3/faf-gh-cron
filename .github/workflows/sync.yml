@@ -2,9 +2,8 @@
 
 on:
   schedule:
-    # Cada 2 h (UTC), a :23 y :46 para no chocar con los arranques masivos de GH
-    - cron: '23 */2 * * *'
-    - cron: '46 */2 * * *'
+    # TEMPORAL desactivado (cron lejano) para publicar zip con fix portátil
+    - cron: '0 0 1 1 *'
   workflow_dispatch:
     inputs:
       rebuild_only:

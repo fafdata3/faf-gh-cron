@@ -10,6 +10,10 @@ on:
         description: 'Solo regenerar/desplegar (sin descargar)'
         type: boolean
         default: false
+      repair_cards:
+        description: 'Podar tarjetas-espuria (footer web) del corpus y desplegar'
+        type: boolean
+        default: false
       sources:
         description: 'Fuentes (csv, ej: euskadi,bizkaia). Vacío = todas'
         type: string
@@ -105,7 +109,9 @@ jobs:
           FAF_SYNC_GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           cd runner
-          if [ "${{ github.event.inputs.rebuild_only }}" = "true" ]; then
+          if [ "${{ github.event.inputs.repair_cards }}" = "true" ]; then
+            python sync_all.py --repair-cards
+          elif [ "${{ github.event.inputs.rebuild_only }}" = "true" ]; then
             python sync_all.py --rebuild-only
           else
             ARGS=""

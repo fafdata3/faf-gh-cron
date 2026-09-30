@@ -2,8 +2,9 @@
 
 on:
   schedule:
-    # Temporalmente desactivado (solo dispatch manual) mientras se despliega
-    - cron: '0 0 1 1 *'
+    # Descargas automaticas: cada 2 horas (UTC) en :23 y :46
+    - cron: '23 */2 * * *'
+    - cron: '46 */2 * * *'
   workflow_dispatch:
     inputs:
       rebuild_only:

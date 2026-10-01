@@ -1,0 +1,103 @@
+name: faf-rescue-2025
+
+on:
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: 'Fuentes a reprocesar (csv)'
+        required: true
+        default: 'alava,euskadi,bizkaia,navarra,rfef,rioja'
+
+# Mismo grupo que el cron de sync para que no se pisen entre sí (el cron se
+# queda en cola mientras dura el rescue; al terminar, el rescue ya redespliega).
+concurrency:
+  group: faf-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: none
+
+jobs:
+  rescue:
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [alava, euskadi, bizkaia, navarra, rfef, rioja]
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Clonar runner privado (faf-runner)
+        run: |
+          git clone --depth=1 \
+            "https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository_owner }}/faf-runner.git" \
+            runner
+
+      - name: Dependencias
+        run: |
+          cd runner
+          pip install --quiet -r requirements.txt
+
+      - name: Rescue (${{ matrix.source }})
+        env:
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+          S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_REGION: ${{ secrets.S3_REGION }}
+          FAF_DATA_DIR: ${{ github.workspace }}/data
+          FAF_BUILD_DIR: ${{ github.workspace }}/build
+          FAF_FAFSTATS_DIR: ${{ github.workspace }}/runner/blobs
+          FAF_MONOLITO: ${{ github.workspace }}/runner/blobs/FUT_stats_fixed.py
+          FAF_M7: '0'
+          FAF_PACING: '3'
+          FAF_RESC_MAX_PER_SOURCE: '5000'
+          FAF_MAX_CONSEC_ERRORS: '12'
+          FAF_REQUIRE_BOOTSTRAP: '1'
+          FAF_S3_VERIFY: '1'
+        run: |
+          cd runner
+          python sync_all.py --bootstrap --rescue --sources ${{ matrix.source }}
+
+  rebuild:
+    needs: rescue
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Clonar runner privado (faf-runner)
+        run: |
+          git clone --depth=1 \
+            "https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository_owner }}/faf-runner.git" \
+            runner
+
+      - name: Dependencias
+        run: |
+          cd runner
+          pip install --quiet -r requirements.txt
+
+      - name: Rebuild y deploy (datos corregidos)
+        env:
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+          S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_REGION: ${{ secrets.S3_REGION }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PROJECT_NAME: faf-stats
+          FAF_DATA_DIR: ${{ github.workspace }}/data
+          FAF_BUILD_DIR: ${{ github.workspace }}/build
+          FAF_FAFSTATS_DIR: ${{ github.workspace }}/runner/blobs
+          FAF_MONOLITO: ${{ github.workspace }}/runner/blobs/FUT_stats_fixed.py
+          FAF_REQUIRE_BOOTSTRAP: '1'
+          FAF_S3_VERIFY: '1'
+        run: |
+          cd runner
+          python sync_all.py --bootstrap --rebuild-only

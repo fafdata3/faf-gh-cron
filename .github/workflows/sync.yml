@@ -23,6 +23,10 @@ on:
         description: 'Actas máx. por fuente en esta pasada'
         type: string
         default: '60'
+      solo_fronte:
+        description: 'Chequeo de temporada: fronte + barrido de huecos varados bajo el high'
+        type: boolean
+        default: false
 
 concurrency:
   group: faf-sync
@@ -116,6 +120,12 @@ jobs:
             python sync_all.py --repair-cards
           elif [ "${{ github.event.inputs.rebuild_only }}" = "true" ]; then
             python sync_all.py --rebuild-only
+          elif [ "${{ github.event.inputs.solo_fronte }}" = "true" ]; then
+            ARGS=""
+            if [ "${{ github.event.inputs.sources }}" != "" ]; then
+              ARGS="--sources ${{ github.event.inputs.sources }}"
+            fi
+            python sync_all.py --once --bootstrap --solo-fronte $ARGS
           else
             ARGS=""
             if [ "${{ github.event.inputs.sources }}" != "" ]; then

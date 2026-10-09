@@ -83,6 +83,33 @@ jobs:
           echo "CHROMEDRIVER=$DRV" | tee -a $GITHUB_ENV
           "$DRV" --version
 
+      - name: Configurar env de Pages (Supabase para /api/config)
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PROJECT_NAME: faf-stats
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          BASE="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/${CF_PROJECT_NAME}"
+          CUR=$(curl -s "$BASE" -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}")
+          BODY=$(echo "$CUR" | jq -c --arg u "$SUPABASE_URL" --arg k "$SUPABASE_SERVICE_KEY" '
+            (.result.deployment_configs // {}) as $dc
+            | {
+                deployment_configs: {
+                  production: (($dc.production // {}) | .env_vars = ((.env_vars // {}) + {SUPABASE_URL:{value:$u}, SUPABASE_SERVICE_KEY:{value:$k}})),
+                  preview:    (($dc.preview    // {}) | .env_vars = ((.env_vars // {}) + {SUPABASE_URL:{value:$u}, SUPABASE_SERVICE_KEY:{value:$k}}))
+                }
+              }')
+          RESP=$(curl -s -X PATCH "$BASE" -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json" -d "$BODY")
+          if echo "$RESP" | jq -e '.success' >/dev/null 2>&1; then
+            echo "env de Pages configurado (SUPABASE_URL, SUPABASE_SERVICE_KEY)"
+          else
+            echo "::warning::No se pudo configurar env de Pages"
+            echo "$RESP" | head -c 800
+          fi
+
       - name: Sync y deploy
         env:
           S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}

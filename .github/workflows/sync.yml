@@ -23,6 +23,14 @@ on:
         description: 'Actas máx. por fuente en esta pasada'
         type: string
         default: '60'
+      m7_max:
+        description: 'Presupuesto Selenium: actas TOTALES por pasada'
+        type: string
+        default: '24'
+      budget_sec:
+        description: 'Presupuesto de tiempo por pasada en segundos'
+        type: string
+        default: '1500'
       solo_fronte:
         description: 'Chequeo de temporada: fronte + barrido de huecos varados bajo el high'
         type: boolean
@@ -133,13 +141,13 @@ jobs:
           FAF_PACING: '8'
           FAF_MAX_PER_RUN: ${{ inputs.max_per_run }}
           FAF_NEW_WINDOW: '30'
-          FAF_M7_MAX_PER_RUN: '24'
+          FAF_M7_MAX_PER_RUN: ${{ inputs.m7_max || '24' }}
           # Con Chrome los bloqueos son raros; pausa fuerte más corta que la del
           # escritorio (15 min) por el presupuesto de la pasada (FAF_RUN_BUDGET).
           FAF_M7_PAUSA_LARGA: '300'
           # Presupuesto por pasada: con Selenium la descarga es ~1-2 s/acta y hay
           # 8 fuentes; 480s (default) se quedaba corto. 25 min cubre todas.
-          FAF_RUN_BUDGET_SEC: '1500'
+          FAF_RUN_BUDGET_SEC: ${{ inputs.budget_sec || '1500' }}
           FAF_SYNC_GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           cd runner

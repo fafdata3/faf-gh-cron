@@ -118,6 +118,28 @@ jobs:
             echo "$RESP" | head -c 800
           fi
 
+      - name: Subir reglas club/filiales a Supabase (config: faf_club_map)
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          F="runner/blobs/data/club_map.json"
+          if [ ! -f "$F" ]; then echo "::warning::no existe $F (se omite)"; exit 0; fi
+          BODY=$(jq -cn --slurpfile m "$F" '{key:"faf_club_map", value:$m[0]}')
+          CODE=$(curl -s -o /tmp/up.json -w '%{http_code}' -X POST \
+            "${SUPABASE_URL}/rest/v1/config?on_conflict=key" \
+            -H "apikey: ${SUPABASE_SERVICE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates,return=minimal" \
+            -d "$BODY")
+          if [ "$CODE" = "200" ] || [ "$CODE" = "201" ] || [ "$CODE" = "204" ]; then
+            echo "faf_club_map subido a Supabase (HTTP $CODE)"
+          else
+            echo "::warning::upsert club_map HTTP $CODE"; head -c 400 /tmp/up.json
+          fi
+
       - name: Sync y deploy
         env:
           S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}

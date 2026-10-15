@@ -118,7 +118,7 @@ jobs:
             echo "$RESP" | head -c 800
           fi
 
-      - name: Subir reglas club/filiales a Supabase (config: faf_club_map)
+      - name: "Subir reglas club/filiales a Supabase (config: faf_club_map)"
         continue-on-error: true
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

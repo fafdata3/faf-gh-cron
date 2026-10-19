@@ -35,6 +35,18 @@ on:
         description: 'Chequeo de temporada: fronte + barrido de huecos varados bajo el high'
         type: boolean
         default: false
+      season_edge:
+        description: 'Barrido temporada: IDs que se sondean en la CABEZA y COLA de cada hueco (default 8)'
+        type: string
+        default: ''
+      season_hole:
+        description: 'Barrido temporada: huecos <= N IDs se sondean enteros; y COLA de los grandes (default 16)'
+        type: string
+        default: ''
+      season_sweep:
+        description: 'Barrido temporada: máx. candidatos por fuente y pasada (default 600)'
+        type: string
+        default: ''
 
 concurrency:
   group: faf-sync
@@ -163,6 +175,12 @@ jobs:
           FAF_PACING: '8'
           FAF_MAX_PER_RUN: ${{ inputs.max_per_run }}
           FAF_NEW_WINDOW: '30'
+          # Barrido de temporada (solo_fronte): por defecto 8/16/600. Para
+          # recuperar jornadas varadas pegadas al fondo de un hueco grande
+          # (varias jornadas seguidas) se sube season_edge/hole/sweep.
+          FAF_SEASON_EDGE: ${{ inputs.season_edge || '8' }}
+          FAF_SEASON_HOLE_MAX: ${{ inputs.season_hole || '16' }}
+          FAF_SEASON_SWEEP_MAX: ${{ inputs.season_sweep || '600' }}
           FAF_M7_MAX_PER_RUN: ${{ inputs.m7_max || '24' }}
           # Con Chrome los bloqueos son raros; pausa fuerte más corta que la del
           # escritorio (15 min) por el presupuesto de la pasada (FAF_RUN_BUDGET).

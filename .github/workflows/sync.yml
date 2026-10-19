@@ -47,6 +47,10 @@ on:
         description: 'Barrido temporada: máx. candidatos por fuente y pasada (default 600)'
         type: string
         default: ''
+      targets:
+        description: 'Sondeo dirigido: ids o rangos a-b (csv) a probar PRIMERO, p.ej. 10053180-10053187'
+        type: string
+        default: ''
 
 concurrency:
   group: faf-sync
@@ -181,6 +185,8 @@ jobs:
           FAF_SEASON_EDGE: ${{ inputs.season_edge || '8' }}
           FAF_SEASON_HOLE_MAX: ${{ inputs.season_hole || '16' }}
           FAF_SEASON_SWEEP_MAX: ${{ inputs.season_sweep || '600' }}
+          # Sondeo dirigido: ids/rangos concretos a probar los primeros.
+          FAF_TARGET_IDS: ${{ inputs.targets }}
           FAF_M7_MAX_PER_RUN: ${{ inputs.m7_max || '24' }}
           # Con Chrome los bloqueos son raros; pausa fuerte más corta que la del
           # escritorio (15 min) por el presupuesto de la pasada (FAF_RUN_BUDGET).

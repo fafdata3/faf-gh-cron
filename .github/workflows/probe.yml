@@ -29,14 +29,17 @@ jobs:
           CJ=/tmp/cj.txt
           rm -f "$CJ"
           echo "== warm https://$HOST/"
-          curl -s -m 45 -c "$CJ" -A "$UA" -H 'Accept-Language: es-ES,es;q=0.9' \
-            -o /tmp/warm -w 'warm: HTTP %{http_code} bytes %{size_download} t=%{time_total}s ip=%{remote_ip}\n' \
+          curl -sL -m 60 -c "$CJ" -A "$UA" -H 'Accept-Language: es-ES,es;q=0.9' \
+            -D /tmp/h0 -o /tmp/warm -w 'warm: HTTP %{http_code} bytes %{size_download} t=%{time_total}s ip=%{remote_ip} url=%{url_effective}\n' \
             "https://$HOST/" || true
+          echo "== cabeceras warm:"; grep -iE '^(location|content-type|server|cf-|set-cookie)' /tmp/h0 | head -20 || true
           echo "== cookies:"; grep -c . "$CJ" 2>/dev/null || echo 0
           for p in $(echo "$PATHS" | tr ',' ' '); do
             printf '\n== %s\n' "$p"
-            curl -s -m 45 -b "$CJ" -A "$UA" -H 'Accept-Language: es-ES,es;q=0.9' \
-              -o /tmp/b -w 'HTTP %{http_code} bytes %{size_download} t=%{time_total}s\n' \
+            curl -sL -m 60 -b "$CJ" -c "$CJ" -A "$UA" -H 'Accept-Language: es-ES,es;q=0.9' \
+              -D /tmp/h -o /tmp/b -w 'HTTP %{http_code} bytes %{size_download} t=%{time_total}s url=%{url_effective}\n' \
               "https://$HOST$p" || true
-            head -c 180 /tmp/b | tr -d '\r\n' ; echo
+            echo "-- location:"; grep -i '^location:' /tmp/h || echo "(sin location)"
+            echo "-- ctype:"; grep -i '^content-type:' /tmp/h || echo "(sin ctype)"
+            echo "-- cuerpo:"; head -c 300 /tmp/b | tr -d '\r\n' ; echo
           done

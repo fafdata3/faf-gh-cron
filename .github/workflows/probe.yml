@@ -1,0 +1,42 @@
+name: probe-fetch
+
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: 'Host (sin esquema)'
+        type: string
+        default: 'www.faf-aff.eus'
+      paths:
+        description: 'Paths separados por coma (con query)'
+        type: string
+        default: '/,/pnfg/NPcd/NFG_CmpPartido?cod_primaria=1000120&CodActa=10053172,/pnfg/NPcd/NFG_CmpPartido?cod_primaria=1000120&CodActa=10053156'
+
+permissions:
+  contents: none
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch de prueba (warm + paths)
+        env:
+          HOST: ${{ inputs.host }}
+          PATHS: ${{ inputs.paths }}
+        run: |
+          set -u
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+          CJ=/tmp/cj.txt
+          rm -f "$CJ"
+          echo "== warm https://$HOST/"
+          curl -s -m 45 -c "$CJ" -A "$UA" -H 'Accept-Language: es-ES,es;q=0.9' \
+            -o /tmp/warm -w 'warm: HTTP %{http_code} bytes %{size_download} t=%{time_total}s ip=%{remote_ip}\n' \
+            "https://$HOST/" || true
+          echo "== cookies:"; grep -c . "$CJ" 2>/dev/null || echo 0
+          for p in $(echo "$PATHS" | tr ',' ' '); do
+            printf '\n== %s\n' "$p"
+            curl -s -m 45 -b "$CJ" -A "$UA" -H 'Accept-Language: es-ES,es;q=0.9' \
+              -o /tmp/b -w 'HTTP %{http_code} bytes %{size_download} t=%{time_total}s\n' \
+              "https://$HOST$p" || true
+            head -c 180 /tmp/b | tr -d '\r\n' ; echo
+          done

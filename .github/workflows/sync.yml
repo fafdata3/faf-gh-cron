@@ -165,7 +165,7 @@ jobs:
           fi
 
       - name: Volcar calendario de portales (diagnóstico)
-        if: ${{ inputs.probe_portal == 'true' }}
+        if: ${{ inputs.probe_portal }}
         env:
           CHROME_BIN: ${{ env.CHROME_BIN }}
           CHROMEDRIVER: ${{ env.CHROMEDRIVER }}
@@ -178,7 +178,7 @@ jobs:
           python portal_cal.py --dump --out "$RUNNER_TEMP/portal" --source "${{ inputs.probe_source }}"
 
       - name: Subir artefacto del calendario
-        if: ${{ inputs.probe_portal == 'true' && always() }}
+        if: ${{ inputs.probe_portal && always() }}
         uses: actions/upload-artifact@v4
         with:
           name: portal-cal
@@ -186,7 +186,7 @@ jobs:
           retention-days: 7
 
       - name: Sync y deploy
-        if: ${{ inputs.probe_portal != 'true' }}
+        if: ${{ !inputs.probe_portal }}
         env:
           S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
           S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}

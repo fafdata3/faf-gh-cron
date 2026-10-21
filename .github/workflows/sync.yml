@@ -5,9 +5,9 @@ on:
     # DESHABILITADO TEMPORALMENTE (2026-10-21) mientras se completa el
     # relleno de 2026-2027 por calendario: los runs programados cancelaban los
     # despachos manuales pendientes (mismo grupo de concurrencia).
-    # REACTIVAR al terminar la sesion de relleno.
-    # - cron: '23 */2 * * *'
-    # - cron: '46 */2 * * *'
+    # Cron anual inofensivo como placeholder (GitHub no acepta `schedule:` vacio).
+    # REACTIVAR al terminar:  - cron: '23 */2 * * *'  - cron: '46 */2 * * *'
+    - cron: '7 4 1 1 *'
   workflow_dispatch:
     inputs:
       rebuild_only:

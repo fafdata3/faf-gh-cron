@@ -178,7 +178,8 @@ jobs:
           FAF_BUILD_DIR: ${{ github.workspace }}/build
         run: |
           cd runner
-          python portal_cal.py --dump --out "$RUNNER_TEMP/portal" --source "${{ inputs.probe_source }}"
+          python portal_cal.py --dump --out "$RUNNER_TEMP/portal/cal" --source "${{ inputs.probe_source }}" || true
+          python portal_enum.py --out "$RUNNER_TEMP/portal/enum" --source "${{ inputs.probe_source }}" --max-pages 50 --sleep 0.9
 
       - name: Subir artefacto del calendario
         if: ${{ inputs.probe_portal && always() }}

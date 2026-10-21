@@ -2,9 +2,12 @@
 
 on:
   schedule:
-    # Descargas automaticas: cada 2 horas (UTC) en :23 y :46
-    - cron: '23 */2 * * *'
-    - cron: '46 */2 * * *'
+    # DESHABILITADO TEMPORALMENTE (2026-10-21) mientras se completa el
+    # relleno de 2026-2027 por calendario: los runs programados cancelaban los
+    # despachos manuales pendientes (mismo grupo de concurrencia).
+    # REACTIVAR al terminar la sesion de relleno.
+    # - cron: '23 */2 * * *'
+    # - cron: '46 */2 * * *'
   workflow_dispatch:
     inputs:
       rebuild_only:

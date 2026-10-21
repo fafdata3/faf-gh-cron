@@ -35,6 +35,10 @@ on:
         description: 'Pausa entre peticiones (s)'
         type: string
         default: '1.2'
+      debug_urls:
+        description: 'URLs concretas a sondear (una por línea) para depurar el portal'
+        type: string
+        default: ''
 
 permissions:
   contents: none
@@ -98,6 +102,13 @@ jobs:
           FAF_BUILD_DIR: ${{ github.workspace }}/build
         run: |
           cd runner
+          ARGS=""
+          if [ -n "${{ inputs.debug_urls }}" ]; then
+            while IFS= read -r u; do
+              [ -z "$u" ] && continue
+              ARGS="$ARGS --debug-url $u"
+            done <<< "${{ inputs.debug_urls }}"
+          fi
           python portal_enum2.py \
             --out "$RUNNER_TEMP/portal/enum" \
             --source "${{ inputs.source }}" \
@@ -107,7 +118,7 @@ jobs:
             --sleep ${{ inputs.sleep || '1.2' }} \
             --save-html 4 \
             --max-competitions ${{ inputs.max_comp || '0' }} \
-            --workers ${{ inputs.workers || '4' }}
+            --workers ${{ inputs.workers || '4' }} $ARGS
 
       - name: Subir artefacto
         if: always()

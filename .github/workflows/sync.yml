@@ -62,6 +62,10 @@ on:
         description: 'Fuente para el volcado de calendario (vacío = todas)'
         type: string
         default: ''
+      probe_max_comp:
+        description: 'Máx. de competiciones por fuente en la enumeración (0 = todas)'
+        type: string
+        default: '0'
 
 concurrency:
   group: faf-sync
@@ -179,7 +183,7 @@ jobs:
         run: |
           cd runner
           python portal_cal.py --dump --out "$RUNNER_TEMP/portal/cal" --source "${{ inputs.probe_source }}" || true
-          python portal_enum2.py --out "$RUNNER_TEMP/portal/enum" --source "${{ inputs.probe_source }}" --temporada "2026-2027" --max-pages 600 --sleep 1.2 --save-html 8
+          python portal_enum2.py --out "$RUNNER_TEMP/portal/enum" --source "${{ inputs.probe_source }}" --temporada "2026-2027" --max-pages 600 --sleep 1.2 --save-html 8 --max-competitions ${{ inputs.probe_max_comp || '0' }}
 
       - name: Subir artefacto del calendario
         if: ${{ inputs.probe_portal && always() }}

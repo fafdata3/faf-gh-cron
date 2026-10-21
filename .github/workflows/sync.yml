@@ -82,6 +82,10 @@ on:
         description: 'URLs a sondear (una por línea) para depurar el portal'
         type: string
         default: ''
+      no_rebuild:
+        description: 'Descargar y subir al corpus SIN regenerar ni desplegar (relleno dirigido)'
+        type: boolean
+        default: false
 
 concurrency:
   group: faf-sync
@@ -256,6 +260,8 @@ jobs:
           # 8 fuentes; 480s (default) se quedaba corto. 25 min cubre todas.
           FAF_RUN_BUDGET_SEC: ${{ inputs.budget_sec || '1500' }}
           FAF_SYNC_GH_TOKEN: ${{ secrets.GH_PAT }}
+          # Relleno dirigido: descargar y subir al corpus sin regen/deploy.
+          FAF_SKIP_REBUILD: ${{ inputs.no_rebuild && '1' || '0' }}
         run: |
           cd runner
           if [ "${{ github.event.inputs.repair_cards }}" = "true" ]; then

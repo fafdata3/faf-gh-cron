@@ -35,6 +35,14 @@ on:
         description: 'Pausa entre peticiones (s)'
         type: string
         default: '1.2'
+      sleep2:
+        description: 'Pausa entre páginas de jornada, fase 2 (s). Vacío = sleep'
+        type: string
+        default: ''
+      comp_offset:
+        description: 'Saltar las primeras N competiciones (repartir el trabajo entre runs)'
+        type: string
+        default: '0'
       debug_urls:
         description: 'URLs concretas a sondear (una por línea) para depurar el portal'
         type: string
@@ -125,6 +133,8 @@ jobs:
             --max-pages ${{ inputs.max_pages || '12000' }} \
             --max-date "${{ inputs.max_date }}" \
             --sleep ${{ inputs.sleep || '1.2' }} \
+            --sleep2 ${{ inputs.sleep2 || '1.2' }} \
+            --comp-offset ${{ inputs.comp_offset || '0' }} \
             --save-html 4 \
             --max-competitions ${{ inputs.max_comp || '0' }} \
             --workers ${{ inputs.workers || '4' }} $ARGS

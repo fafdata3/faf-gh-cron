@@ -86,9 +86,16 @@ on:
         description: 'Descargar y subir al corpus SIN regenerar ni desplegar (relleno dirigido)'
         type: boolean
         default: false
+      job_group:
+        description: 'Grupo de concurrencia (vacío = faf-sync-main). Usar p.ej. fill-alava para paralelizar rellenos'
+        type: string
+        default: ''
 
 concurrency:
-  group: faf-sync
+  # Grupo por defecto: el cron y los despliegues se serializan. Los rellenos
+  # dirigidos pueden usar job_group=fill-<fuente> para ir en paralelo (con
+  # no_rebuild=true, sin tocar la web).
+  group: faf-sync-${{ inputs.job_group || 'main' }}
   cancel-in-progress: false
 
 permissions:

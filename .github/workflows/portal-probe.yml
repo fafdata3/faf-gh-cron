@@ -39,6 +39,14 @@ on:
         description: 'URLs concretas a sondear (una por línea) para depurar el portal'
         type: string
         default: ''
+      debug_sleep:
+        description: 'Espera tras cargar cada URL en modo debug (s)'
+        type: string
+        default: '1.0'
+      debug_strategy:
+        description: 'page_load_strategy en modo debug (normal|eager)'
+        type: string
+        default: 'normal'
 
 permissions:
   contents: none
@@ -108,6 +116,7 @@ jobs:
               [ -z "$u" ] && continue
               ARGS="$ARGS --debug-url $u"
             done <<< "${{ inputs.debug_urls }}"
+            ARGS="$ARGS --debug-sleep ${{ inputs.debug_sleep || '1.0' }} --debug-strategy ${{ inputs.debug_strategy || 'normal' }}"
           fi
           python portal_enum2.py \
             --out "$RUNNER_TEMP/portal/enum" \

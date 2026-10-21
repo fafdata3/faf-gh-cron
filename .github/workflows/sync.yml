@@ -70,6 +70,14 @@ on:
         description: 'Nº de Chrome en paralelo para las páginas de jornada'
         type: string
         default: '2'
+      probe_max_pages:
+        description: 'Máx. de páginas de jornada por fuente (0 = sin tope)'
+        type: string
+        default: '12000'
+      probe_max_date:
+        description: 'No pedir jornadas con fecha posterior a esta (dd-mm-aaaa). Vacío = hoy'
+        type: string
+        default: ''
       probe_debug_urls:
         description: 'URLs a sondear (una por línea) para depurar el portal'
         type: string
@@ -198,7 +206,7 @@ jobs:
               ARGS="$ARGS --debug-url $u"
             done <<< "${{ inputs.probe_debug_urls }}"
           fi
-          python portal_enum2.py --out "$RUNNER_TEMP/portal/enum" --source "${{ inputs.probe_source }}" --temporada "2026-2027" --max-pages 4000 --sleep 1.2 --save-html 4 --max-competitions ${{ inputs.probe_max_comp || '0' }} --workers ${{ inputs.probe_workers || '2' }} $ARGS
+          python portal_enum2.py --out "$RUNNER_TEMP/portal/enum" --source "${{ inputs.probe_source }}" --temporada "2026-2027" --max-pages ${{ inputs.probe_max_pages || '12000' }} --max-date "${{ inputs.probe_max_date }}" --sleep 1.2 --save-html 4 --max-competitions ${{ inputs.probe_max_comp || '0' }} --workers ${{ inputs.probe_workers || '2' }} $ARGS
 
       - name: Subir artefacto del calendario
         if: ${{ inputs.probe_portal && always() }}

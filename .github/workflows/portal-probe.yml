@@ -1,0 +1,118 @@
+name: faf-portal-probe
+
+# Enumeración de portales (solo LECTURA: no toca S3, Supabase ni la web).
+# Vive en un workflow aparte para poder lanzarla EN PARALELO por fuente:
+# el grupo de concurrencia `faf-sync` del workflow de sync serializa todo y
+# los sondeosidios cancelaban los rellenos manuales.
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Fuente (csv). Vacío = todas'
+        type: string
+        default: ''
+      workers:
+        description: 'Nº de Chrome en paralelo'
+        type: string
+        default: '4'
+      max_pages:
+        description: 'Máx. de páginas de jornada por fuente'
+        type: string
+        default: '12000'
+      max_date:
+        description: 'No pedir jornadas posteriores a esta fecha (dd-mm-aaaa). Vacío = hoy'
+        type: string
+        default: ''
+      max_comp:
+        description: 'Máx. de competiciones por fuente (0 = todas)'
+        type: string
+        default: '0'
+      season:
+        description: 'Temporada (texto de la opción del portal)'
+        type: string
+        default: '2026-2027'
+      sleep:
+        description: 'Pausa entre peticiones (s)'
+        type: string
+        default: '1.2'
+
+permissions:
+  contents: none
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Clonar runner privado (faf-runner)
+        run: |
+          git clone --depth=1 \
+            "https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository_owner }}/faf-runner.git" \
+            runner
+
+      - name: Dependencias
+        run: |
+          cd runner
+          pip install --quiet -r requirements.txt
+
+      - name: Instalar Chrome + chromedriver (Selenium Modo 7)
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Exponer ruta de Chrome
+        run: |
+          CHROME_BIN=$(find /opt/hostedtoolcache/setup-chrome -name 'chrome' -type f 2>/dev/null | head -1)
+          if [ -z "$CHROME_BIN" ]; then CHROME_BIN=$(command -v google-chrome || true); fi
+          if [ -n "$CHROME_BIN" ]; then
+            echo "CHROME_BIN=$CHROME_BIN" | tee -a $GITHUB_ENV
+          fi
+          CHROME_VER=$("$CHROME_BIN" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "Chrome: $CHROME_BIN ($CHROME_VER)"
+
+      - name: Descargar chromedriver del mismo build
+        run: |
+          CHROME_BIN="$CHROME_BIN"
+          CHROME_VER=$("$CHROME_BIN" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          if [ -z "$CHROME_VER" ]; then exit 1; fi
+          mkdir -p "$RUNNER_TEMP/driver"
+          curl -fsSL "https://storage.googleapis.com/chrome-for-testing-public/$CHROME_VER/linux64/chromedriver-linux64.zip" \
+            -o "$RUNNER_TEMP/driver/cd.zip"
+          cd "$RUNNER_TEMP/driver" && unzip -q -o cd.zip
+          DRV=$(find "$RUNNER_TEMP/driver" -name chromedriver -type f | head -1)
+          chmod 755 "$DRV"
+          echo "CHROMEDRIVER=$DRV" | tee -a $GITHUB_ENV
+          "$DRV" --version
+
+      - name: Enumerar portales
+        env:
+          CHROME_BIN: ${{ env.CHROME_BIN }}
+          CHROMEDRIVER: ${{ env.CHROMEDRIVER }}
+          FAF_MONOLITO: ${{ github.workspace }}/runner/blobs/FUT_stats_fixed.py
+          FAF_FAFSTATS_DIR: ${{ github.workspace }}/runner/blobs
+          FAF_DATA_DIR: ${{ github.workspace }}/data
+          FAF_BUILD_DIR: ${{ github.workspace }}/build
+        run: |
+          cd runner
+          python portal_enum2.py \
+            --out "$RUNNER_TEMP/portal/enum" \
+            --source "${{ inputs.source }}" \
+            --temporada "${{ inputs.season }}" \
+            --max-pages ${{ inputs.max_pages || '12000' }} \
+            --max-date "${{ inputs.max_date }}" \
+            --sleep ${{ inputs.sleep || '1.2' }} \
+            --save-html 4 \
+            --max-competitions ${{ inputs.max_comp || '0' }} \
+            --workers ${{ inputs.workers || '4' }}
+
+      - name: Subir artefacto
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portal-enum-${{ inputs.source || 'todas' }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/portal
+          retention-days: 7

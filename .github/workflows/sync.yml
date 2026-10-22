@@ -267,22 +267,33 @@ jobs:
           FAF_SYNC_GH_TOKEN: ${{ secrets.GH_PAT }}
           # Relleno dirigido: descargar y subir al corpus sin regen/deploy.
           FAF_SKIP_REBUILD: ${{ inputs.no_rebuild && '1' || '0' }}
+          LIVE_LOG: ${{ runner.temp }}/live.log
         run: |
+          set -o pipefail
+          bash "$GITHUB_WORKSPACE/.github/scripts/live_log.sh" \
+            "$LIVE_LOG" "logs/sync-${{ github.run_id }}.log" 12 &
           cd runner
           if [ "${{ github.event.inputs.repair_cards }}" = "true" ]; then
-            python sync_all.py --repair-cards
+            python -u sync_all.py --repair-cards 2>&1 | tee -a "$LIVE_LOG"
           elif [ "${{ github.event.inputs.rebuild_only }}" = "true" ]; then
-            python sync_all.py --rebuild-only
+            python -u sync_all.py --rebuild-only 2>&1 | tee -a "$LIVE_LOG"
           elif [ "${{ github.event.inputs.solo_fronte }}" = "true" ]; then
             ARGS=""
             if [ "${{ github.event.inputs.sources }}" != "" ]; then
               ARGS="--sources ${{ github.event.inputs.sources }}"
             fi
-            python sync_all.py --once --bootstrap --solo-fronte $ARGS
+            python -u sync_all.py --once --bootstrap --solo-fronte $ARGS 2>&1 | tee -a "$LIVE_LOG"
           else
             ARGS=""
             if [ "${{ github.event.inputs.sources }}" != "" ]; then
               ARGS="--sources ${{ github.event.inputs.sources }}"
             fi
-            python sync_all.py --once --bootstrap $ARGS
+            python -u sync_all.py --once --bootstrap $ARGS 2>&1 | tee -a "$LIVE_LOG"
+          fi
+          # Subida final del log (el bucle puede llevar hasta 12 s de retraso).
+          if [ -n "${SUPABASE_URL:-}" ] && [ -n "${SUPABASE_SERVICE_KEY:-}" ] && [ -s "$LIVE_LOG" ]; then
+            curl -sS -m 30 -X POST "$SUPABASE_URL/storage/v1/object/assets/logs/sync-${{ github.run_id }}.log" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+              -H "x-upsert: true" -H "Content-Type: text/plain; charset=utf-8" \
+              --data-binary "@$LIVE_LOG" >/dev/null 2>&1 || true
           fi

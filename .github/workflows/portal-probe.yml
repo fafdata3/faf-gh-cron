@@ -55,6 +55,10 @@ on:
         description: 'page_load_strategy en modo debug (normal|eager)'
         type: string
         default: 'normal'
+      live_interval:
+        description: 'Cada cuántos segundos subir el log en vivo a Supabase Storage'
+        type: string
+        default: '60'
 
 permissions:
   contents: none
@@ -112,11 +116,20 @@ jobs:
         env:
           CHROME_BIN: ${{ env.CHROME_BIN }}
           CHROMEDRIVER: ${{ env.CHROMEDRIVER }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          LIVE_LOG: ${{ runner.temp }}/live.log
+          LIVE_INTERVAL: ${{ inputs.live_interval }}
           FAF_MONOLITO: ${{ github.workspace }}/runner/blobs/FUT_stats_fixed.py
           FAF_FAFSTATS_DIR: ${{ github.workspace }}/runner/blobs
           FAF_DATA_DIR: ${{ github.workspace }}/data
           FAF_BUILD_DIR: ${{ github.workspace }}/build
         run: |
+          set -o pipefail
+          # Log en vivo (Supabase Storage) para poder seguirlo desde fuera.
+          bash "$GITHUB_WORKSPACE/.github/scripts/live_log.sh" \
+            "$LIVE_LOG" "logs/probe-${{ inputs.source || 'todas' }}-${{ github.run_id }}.log" \
+            "${LIVE_INTERVAL:-60}" &
           cd runner
           ARGS=""
           if [ -n "${{ inputs.debug_urls }}" ]; then
@@ -126,7 +139,7 @@ jobs:
             done <<< "${{ inputs.debug_urls }}"
             ARGS="$ARGS --debug-sleep ${{ inputs.debug_sleep || '1.0' }} --debug-strategy ${{ inputs.debug_strategy || 'normal' }}"
           fi
-          python portal_enum2.py \
+          python -u portal_enum2.py \
             --out "$RUNNER_TEMP/portal/enum" \
             --source "${{ inputs.source }}" \
             --temporada "${{ inputs.season }}" \
@@ -137,7 +150,15 @@ jobs:
             --comp-offset ${{ inputs.comp_offset || '0' }} \
             --save-html 4 \
             --max-competitions ${{ inputs.max_comp || '0' }} \
-            --workers ${{ inputs.workers || '4' }} $ARGS
+            --workers ${{ inputs.workers || '4' }} $ARGS 2>&1 | tee -a "$LIVE_LOG"
+          # Subida final (la del bucle puede quedarse hasta `live_interval` atrás).
+          LIVE_REMOTE="logs/probe-${{ inputs.source || 'todas' }}-${{ github.run_id }}.log"
+          if [ -n "${SUPABASE_URL:-}" ] && [ -n "${SUPABASE_SERVICE_KEY:-}" ] && [ -s "$LIVE_LOG" ]; then
+            curl -sS -m 30 -X POST "$SUPABASE_URL/storage/v1/object/assets/$LIVE_REMOTE" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+              -H "x-upsert: true" -H "Content-Type: text/plain; charset=utf-8" \
+              --data-binary "@$LIVE_LOG" >/dev/null 2>&1 || true
+          fi
 
       - name: Subir artefacto
         if: always()

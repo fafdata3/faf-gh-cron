@@ -1,4 +1,4 @@
-﻿name: faf-sync
+name: faf-sync
 
 on:
   schedule:
@@ -270,7 +270,7 @@ jobs:
           LIVE_LOG: ${{ runner.temp }}/live.log
         run: |
           set -o pipefail
-          bash "$GITHUB_WORKSPACE/.github/scripts/live_log.sh" \
+          bash "$GITHUB_WORKSPACE/runner/live_log.sh" \
             "$LIVE_LOG" "logs/sync-${{ github.run_id }}.log" 12 &
           cd runner
           if [ "${{ github.event.inputs.repair_cards }}" = "true" ]; then

@@ -127,7 +127,7 @@ jobs:
         run: |
           set -o pipefail
           # Log en vivo (Supabase Storage) para poder seguirlo desde fuera.
-          bash "$GITHUB_WORKSPACE/.github/scripts/live_log.sh" \
+          bash "$GITHUB_WORKSPACE/runner/live_log.sh" \
             "$LIVE_LOG" "logs/probe-${{ inputs.source || 'todas' }}-${{ github.run_id }}.log" \
             "${LIVE_INTERVAL:-60}" &
           cd runner

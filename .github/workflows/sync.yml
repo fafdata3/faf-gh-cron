@@ -2,12 +2,10 @@
 
 on:
   schedule:
-    # DESHABILITADO TEMPORALMENTE (2026-10-21) mientras se completa el
-    # relleno de 2026-2027 por calendario: los runs programados cancelaban los
-    # despachos manuales pendientes (mismo grupo de concurrencia).
-    # Cron anual inofensivo como placeholder (GitHub no acepta `schedule:` vacio).
-    # REACTIVAR al terminar:  - cron: '23 */2 * * *'  - cron: '46 */2 * * *'
-    - cron: '7 4 1 1 *'
+    # REACTIVADO (2026-10-22) tras completar el relleno dirigido de 2026-2027.
+    # Dos pasadas cada 2 h, en minutos distintos para no solaparse.
+    - cron: '23 */2 * * *'
+    - cron: '46 */2 * * *'
   workflow_dispatch:
     inputs:
       rebuild_only:
